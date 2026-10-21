@@ -1,0 +1,23 @@
+{
+  "name": "checklater",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Save links from any browser or phone into one shared space, identified by a unique code.",
+  "scripts": {
+    "sync": "node scripts/sync-shared.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "dev": "npm run sync && vite",
+    "build": "npm run sync && vite build",
+    "preview": "vite preview",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "deploy": "npm run build && firebase deploy"
+  },
+  "dependencies": {
+    "firebase": "^13.0.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

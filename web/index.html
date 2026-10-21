@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>CheckLater</title>
+  <meta name="description" content="Save links from any browser or phone, check them later." />
+  <meta name="theme-color" content="#5b5bd6" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <!-- Firebase not configured -->
+  <main id="viewSetup" class="center" hidden>
+    <img src="/icons/icon.svg" alt="" width="64" height="64" />
+    <h1>Almost there</h1>
+    <p class="muted">Paste your Firebase web config into <code>shared/config.js</code> and restart <code>npm run dev</code>.</p>
+  </main>
+
+  <!-- Loading -->
+  <main id="viewLoading" class="center">
+    <div class="spinner" aria-label="Loading"></div>
+  </main>
+
+  <!-- Welcome: sign in or create a code -->
+  <main id="viewWelcome" class="center welcome" hidden>
+    <img src="/icons/icon.svg" alt="" width="72" height="72" />
+    <h1>CheckLater</h1>
+    <p class="muted">Save it now. Check it later. On any device.</p>
+
+    <div class="segmented" role="tablist">
+      <button class="seg active" data-tab="signin" role="tab">I have a code</button>
+      <button class="seg" data-tab="signup" role="tab">Create a code</button>
+    </div>
+
+    <form id="formSignin" class="card stack">
+      <label for="codeInput">Your code</label>
+      <input id="codeInput" class="code-input" placeholder="XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" inputmode="text" />
+      <button class="btn primary" type="submit">Open my space</button>
+    </form>
+
+    <form id="formSignup" class="card stack" hidden>
+      <label for="nameInput">Your name</label>
+      <input id="nameInput" placeholder="e.g. Alex" maxlength="32" autocomplete="nickname" />
+      <button class="btn primary" type="submit">Create my code</button>
+      <p class="muted small">You get one unique code. Use it to sign in on your phone, laptop and browser extension. No password needed.</p>
+    </form>
+
+    <div id="newCode" class="card stack" hidden>
+      <p><strong>Your code is ready.</strong> Keep it somewhere safe. Anyone with it can see your links.</p>
+      <div id="newCodeValue" class="big-code"></div>
+      <div class="row">
+        <button class="btn" id="newCodeCopy" type="button">Copy</button>
+        <button class="btn primary grow" id="newCodeDone" type="button">Continue</button>
+      </div>
+    </div>
+    <p id="authError" class="error" role="alert" hidden></p>
+  </main>
+
+  <!-- Main app -->
+  <div id="viewApp" hidden>
+    <header class="appbar">
+      <img src="/icons/icon.svg" alt="" width="28" height="28" />
+      <h1>CheckLater</h1>
+      <span id="syncDot" class="sync-dot" title="Synced"></span>
+      <button id="accountBtn" class="avatar" aria-label="Account and settings"></button>
+    </header>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4a6 6 0 1 0 3.9 10.6l4.7 4.7 1.4-1.4-4.7-4.7A6 6 0 0 0 10 4Zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"/></svg>
+        <input id="searchInput" type="search" placeholder="Search saved links" aria-label="Search" />
+      </div>
+      <div class="segmented small-seg" role="tablist" aria-label="Status">
+        <button class="seg active" data-view="unread">To check</button>
+        <button class="seg" data-view="done">Done</button>
+      </div>
+    </div>
+
+    <nav id="filters" class="filters" aria-label="Categories"></nav>
+
+    <main class="content">
+      <ul id="list" class="list"></ul>
+      <div id="empty" class="empty" hidden></div>
+    </main>
+
+    <button id="fab" class="fab" aria-label="Save a link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+    </button>
+  </div>
+
+  <!-- Add / edit sheet -->
+  <dialog id="addDialog" class="sheet">
+    <form id="addForm" method="dialog" class="stack">
+      <div class="sheet-head">
+        <h2 id="addTitle">Save a link</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <label for="addUrl">Link</label>
+      <div class="row">
+        <input id="addUrl" type="url" inputmode="url" placeholder="https://…" required class="grow" />
+        <button type="button" id="pasteBtn" class="btn">Paste</button>
+      </div>
+      <p id="addDup" class="hint" hidden></p>
+      <label for="addTitleInput">Title</label>
+      <input id="addTitleInput" placeholder="Optional. We'll use the site name." maxlength="300" />
+      <label>Category</label>
+      <div id="addCats" class="chips" role="radiogroup"></div>
+      <label for="addNote">Note</label>
+      <textarea id="addNote" rows="2" maxlength="2000" placeholder="Why do you want to check this later?"></textarea>
+      <p id="addError" class="error" hidden></p>
+      <button class="btn primary" type="submit" id="addSubmit">Save</button>
+    </form>
+  </dialog>
+
+  <!-- Item actions sheet -->
+  <dialog id="itemDialog" class="sheet">
+    <div class="stack">
+      <div class="sheet-head">
+        <h2 id="itemTitle" class="clamp2"></h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <p id="itemMeta" class="muted small"></p>
+      <div class="actions" id="itemActions"></div>
+      <label>Move to</label>
+      <div id="itemCats" class="chips"></div>
+    </div>
+  </dialog>
+
+  <!-- Account sheet -->
+  <dialog id="accountDialog" class="sheet">
+    <div class="stack">
+      <div class="sheet-head">
+        <h2 id="accName"></h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+
+      <section class="panel">
+        <h3>Your code</h3>
+        <div class="row">
+          <div id="accCode" class="big-code grow"></div>
+          <button class="btn" id="accCopy">Copy</button>
+        </div>
+        <div class="qr-row">
+          <img id="accQr" alt="QR code to open this space on another device" width="132" height="132" />
+          <p class="muted small">Scan with your phone's camera to sign in there. Or type the code into the app or the Chrome extension.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Categories</h3>
+        <ul id="catList" class="cat-list"></ul>
+        <form id="catForm" class="row">
+          <input id="catEmoji" placeholder="🏷️" maxlength="4" class="emoji-input" aria-label="Emoji" />
+          <input id="catName" placeholder="New category" maxlength="30" class="grow" aria-label="Category name" />
+          <button class="btn" type="submit">Add</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h3>More</h3>
+        <div class="actions">
+          <button class="btn" id="installBtn" hidden>📲 Install app</button>
+          <button class="btn" id="exportBtn">⬇️ Export JSON</button>
+          <button class="btn danger" id="signOutBtn">Sign out of this device</button>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden>
+    <span id="toastMsg"></span>
+    <button id="toastAction" class="link" hidden></button>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

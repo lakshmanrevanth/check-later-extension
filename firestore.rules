@@ -1,0 +1,64 @@
+rules_version = '2';
+
+// Security model: the 12-character space code IS the key (≈60 bits, unguessable).
+// - Every client signs in anonymously (blocks raw unauthenticated traffic).
+// - Spaces can be fetched by exact code but never listed, so codes cannot be enumerated.
+// - No collection-group rule exists, so items cannot be queried across spaces.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validCode(code) {
+      return code.matches('^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$');
+    }
+
+    function validCategories(cats) {
+      return cats is list && cats.size() <= 50;
+    }
+
+    function validItem() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['url', 'title', 'note', 'category', 'domain', 'favicon',
+                               'source', 'status', 'pinned', 'createdAt', 'updatedAt', 'remindAt'])
+        && d.keys().hasAll(['url', 'title', 'category', 'status', 'createdAt'])
+        && d.url is string && d.url.size() > 0 && d.url.size() <= 4096
+        && d.title is string && d.title.size() <= 500
+        && (!('note' in d) || (d.note is string && d.note.size() <= 5000))
+        && d.category is string && d.category.size() <= 64
+        && d.status in ['unread', 'done']
+        && (!('pinned' in d) || d.pinned is bool)
+        && d.createdAt is timestamp;
+    }
+
+    match /spaces/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+
+      allow create: if signedIn()
+        && validCode(code)
+        && request.resource.data.keys().hasOnly(['username', 'createdAt', 'categories'])
+        && request.resource.data.username is string
+        && request.resource.data.username.size() >= 2
+        && request.resource.data.username.size() <= 32
+        && validCategories(request.resource.data.categories);
+
+      // Only the category list can change after creation.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['categories'])
+        && validCategories(request.resource.data.categories);
+
+      allow delete: if false;
+
+      match /items/{itemId} {
+        allow read: if signedIn();
+        allow create, update: if signedIn()
+          && exists(/databases/$(database)/documents/spaces/$(code))
+          && validItem();
+        allow delete: if signedIn();
+      }
+    }
+  }
+}

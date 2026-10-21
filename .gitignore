@@ -1,0 +1,6 @@
+node_modules/
+web/dist/
+*.zip
+.firebase/
+firebase-debug.log
+.firebaserc

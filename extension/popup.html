@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CheckLater</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="top">
+    <img src="icons/icon32.png" alt="" width="22" height="22" />
+    <strong>CheckLater</strong>
+    <button id="codeChip" class="chip-btn" hidden title="Click to copy your code"></button>
+  </header>
+
+  <!-- Firebase not configured -->
+  <section id="viewSetup" class="view" hidden>
+    <h2>Almost there</h2>
+    <p class="muted">Add your Firebase config to <code>shared/config.js</code>, run <code>npm run sync</code>, then reload the extension.</p>
+  </section>
+
+  <!-- Not linked -->
+  <section id="viewAuth" class="view" hidden>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="signin" role="tab">I have a code</button>
+      <button class="tab" data-tab="signup" role="tab">New here</button>
+    </div>
+
+    <form id="formSignin" class="stack">
+      <label for="codeInput">Your CheckLater code</label>
+      <input id="codeInput" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="16" class="code-input" />
+      <button class="primary" type="submit">Link this browser</button>
+      <p class="muted small">Use the same code on every device to see the same saved links.</p>
+    </form>
+
+    <form id="formSignup" class="stack" hidden>
+      <label for="nameInput">Your name</label>
+      <input id="nameInput" placeholder="e.g. Alex" maxlength="32" autocomplete="nickname" />
+      <button class="primary" type="submit">Create my code</button>
+    </form>
+
+    <div id="newCode" class="stack" hidden>
+      <p>Your code is ready. Write it down. Any device can sign in with it.</p>
+      <div class="big-code" id="newCodeValue"></div>
+      <button class="primary" id="newCodeDone">I saved it. Continue</button>
+    </div>
+    <p id="authError" class="error" hidden></p>
+  </section>
+
+  <!-- Linked: save current page -->
+  <section id="viewMain" class="view" hidden>
+    <div class="page">
+      <img id="pageIcon" alt="" width="20" height="20" />
+      <div class="page-text">
+        <input id="titleInput" class="title-input" aria-label="Title" maxlength="300" />
+        <div id="pageUrl" class="muted small ellipsis"></div>
+      </div>
+    </div>
+    <p id="dupHint" class="hint" hidden></p>
+
+    <div id="categories" class="cats" role="radiogroup" aria-label="Category"></div>
+    <textarea id="noteInput" rows="2" maxlength="2000" placeholder="Add a note (optional)"></textarea>
+    <button id="saveBtn" class="primary">Save to CheckLater</button>
+    <p id="saveError" class="error" hidden></p>
+
+    <div id="recentWrap" hidden>
+      <h3>Recent</h3>
+      <ul id="recent" class="recent"></ul>
+    </div>
+
+    <footer class="foot">
+      <a id="openApp" href="#" target="_blank">Open app ↗</a>
+      <span class="muted small" id="whoami"></span>
+      <button id="signOut" class="link">Unlink</button>
+    </footer>
+  </section>
+
+  <section id="viewSaved" class="view saved" hidden>
+    <div class="tick">✓</div>
+    <p id="savedMsg">Saved</p>
+  </section>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
